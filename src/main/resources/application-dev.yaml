@@ -1,0 +1,106 @@
+server:
+  port: 8791
+  servlet:
+    context-path: /smart-office
+
+spring:
+  # AI配置
+  ai:
+    ollama:
+      base-url: http://localhost:11434
+      # 大语言模型
+      chat:
+        model: qwen3.5:9b
+        options:
+          temperature: 0.7    # 控制文本的随机性和创造性，值越高（如0.8）回答越多样，值越低（如0.2）回答越确定
+          top-p: 0.9          # 控制文本的多样性，较高的值（如0.9）会带来更多样化的选择
+          num-predict: 2048   # 设置生成文本的最大令牌数
+          num-ctx: 4096       # 设置上下文窗口的大小，影响模型能“记住”的多长对话历史
+          repeat-penalty: 1.1 # 惩罚重复，值越高越避免重复内容
+      # 嵌入模型
+      embedding:
+        options:
+          model: qwen3-embedding:8b
+
+  # Milvus向量数据库配置
+  vectorstore:
+    milvus:
+      # 连接配置
+      client:
+        host: localhost           # Milvus服务器地址
+        port: 19530                # Milvus默认端口
+        username:               # 如果启用了认证
+        password:             # 默认密码
+        # uri: http://localhost:19530 # 也可用URI方式，与host/port二选一
+
+      # 存储配置
+      database-name: default        # 数据库名称
+      collection-name: vector_store # 集合名称
+      embedding-dimension: 4096     # ⚠️ 关键：必须与嵌入模型输出维度一致！
+
+      # 索引配置
+      index-type: IVF_FLAT          # 索引类型
+      metric-type: COSINE           # 相似度度量方式（余弦相似度）
+      index-parameters: {"nlist": 1024} # 索引参数
+
+      # 字段映射（一般保持默认即可）
+      id-field-name: doc_id
+      content-field-name: content
+      metadata-field-name: metadata
+      embedding-field-name: embedding
+
+      # 是否自动初始化Schema（首次运行时建议设为true）
+      initialize-schema: true
+
+  # 文件上传配置
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: 100MB
+      max-request-size: 100MB
+      file-size-threshold: 2KB
+
+  # 数据库配置
+  datasource:
+    type: com.alibaba.druid.pool.DruidDataSource                                      # 使用 Druid 数据源
+    driver-class-name: com.mysql.cj.jdbc.Driver                                       # MySQL驱动
+    url: jdbc:mysql://localhost:3306/smart_office?useUnicode=true&characterEncoding=utf-8&serverTimezone=Asia/Shanghai  # 数据库连接
+    username: root                                                                     # 用户名
+    password: xiao                                                                     # 密码
+    druid:
+      initial-size: 5                                                                  # 初始连接数
+      min-idle: 5                                                                      # 最小空闲连接
+      max-active: 20                                                                   # 最大活跃连接
+      max-wait: 60000                                                                  # 获取连接等待时间
+      validation-query: SELECT 1                                                       # 验证SQL
+      test-while-idle: true                                                            # 空闲时验证
+      time-between-eviction-runs-millis: 60000                                         # 空闲检测间隔
+      filters: stat,wall                                                               # 监控统计和防火墙
+      stat-view-servlet:
+        enabled: true                                                                  # 启用监控页面
+        url-pattern: /druid/*                                                          # 监控页面路径
+        login-username: admin                                                          # 监控页面用户名
+        login-password: admin123                                                       # 监控页面密码
+        allow: 127.0.0.1                                                               # 允许访问IP
+
+# MyBatis-Plus 配置
+mybatis-plus:
+  mapper-locations: classpath:mapper/*.xml                                             # Mapper文件位置
+  type-aliases-package: com.smart.office.entity                                             # 实体类包路径
+  configuration:
+    map-underscore-to-camel-case: true                                                 # 开启驼峰命名
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl                             # 打印SQL日志
+
+# 异步任务配置
+async:
+  executor:
+    core-pool-size: 5
+    max-pool-size: 20
+    queue-capacity: 100
+    thread-name-prefix: doc-process-
+
+  task:
+    document:
+      chunk-size: 500        # 文本块大小（字符数）
+      chunk-overlap: 100     # 块重叠大小
+      max-retries: 3         # 最大重试次数

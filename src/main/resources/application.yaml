@@ -1,0 +1,5 @@
+spring:
+  application:
+    name: smart-office-assistant
+  profiles:
+    active: dev
