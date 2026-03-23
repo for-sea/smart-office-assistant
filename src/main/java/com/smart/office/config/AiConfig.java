@@ -2,6 +2,7 @@ package com.smart.office.config;
 
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.PromptChatMemoryAdvisor;
+import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;
 import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.memory.MessageWindowChatMemory;
 import org.springframework.ai.chat.memory.repository.jdbc.JdbcChatMemoryRepository;
@@ -31,7 +32,8 @@ public class AiConfig {
                 .defaultSystem("你是一个智能办公助手，请基于提供的上下文信息回答问题。" +
                         "如果上下文中没有相关信息，请明确告知用户'知识库中未找到相关信息'。" +
                         "不要编造信息，回答要简洁准确。")
-                .defaultAdvisors(PromptChatMemoryAdvisor.builder(chatMemory).build())
+                .defaultAdvisors(new SimpleLoggerAdvisor(1))
+//                .defaultAdvisors(PromptChatMemoryAdvisor.builder(chatMemory).build())
                 .build();
     }
 
@@ -64,31 +66,4 @@ public class AiConfig {
                 .maxMessages(20)
                 .build();
     }
-/*
-    Spring 自动注入Milvus客户端，不需要手动配置
-    *//**
-     * 配置 Milvus 客户端
-     *//*
-    @Bean
-    public MilvusServiceClient milvusClient() {
-        return new MilvusServiceClient(ConnectParam.newBuilder()
-                .withHost(milvusHost)
-                .withPort(milvusPort)
-                .build());
-    }
-
-    *//**
-     * 配置向量存储（Milvus）
-     *//*
-    @Bean
-    @Primary
-    public VectorStore vectorStore(MilvusServiceClient embeddingClient, EmbeddingModel embeddingModel) {
-        return MilvusVectorStore.builder(embeddingClient, embeddingModel)
-                .collectionName(collectionName)
-                .embeddingDimension(dimension)
-                .indexType(IndexType.IVF_FLAT)
-                .metricType(MetricType.COSINE)
-                .initializeSchema(true)  // 自动创建集合
-                .build();
-    }*/
 }

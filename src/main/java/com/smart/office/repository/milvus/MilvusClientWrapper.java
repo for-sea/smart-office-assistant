@@ -68,7 +68,7 @@ public class MilvusClientWrapper {
     @Value("${spring.vectorstore.milvus.index-parameters.nlist:1024}")
     private Integer nlist;
 
-    @Value("${spring.vectorstore.milvus.collection-timeout:10}")
+    @Value("${spring.vectorstore.milvus.client.connect-timeout-ms:10000}")
     private int connectionTimeout;
 
     /**

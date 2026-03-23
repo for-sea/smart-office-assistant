@@ -393,16 +393,19 @@ public class MilvusSearchRepository {
         // 获取第一个查询向量的结果
         List<SearchResultsWrapper.IDScore> idScores = wrapper.getIDScore(0);
 
-        for (SearchResultsWrapper.IDScore idScore : idScores) {
+        for (int i = 0; i < idScores.size(); i++) {
+            SearchResultsWrapper.IDScore idScore = idScores.get(i);
             SearchResult result = new SearchResult();
             result.setScore((double) idScore.getScore());
             result.setChunkId(idScore.getStrID());
 
-            int index = idScores.indexOf(idScore);
             try {
+                Object docIdObj = idScore.getFieldValues().get("doc_id");
+                Object contentObj = idScore.getFieldValues().get("content");
+
                 // 获取其他字段
-                Object docIdObj = wrapper.getFieldData("doc_id", index);
-                Object contentObj = wrapper.getFieldData("content", index);
+//                Object docIdObj = wrapper.getFieldData("doc_id", i);
+//                Object contentObj = wrapper.getFieldData("content", i);
 
                 if (docIdObj != null) {
                     result.setDocId(Long.parseLong(docIdObj.toString()));
@@ -413,7 +416,7 @@ public class MilvusSearchRepository {
 
                 results.add(result);
             } catch (Exception e) {
-                log.warn("解析搜索结果失败: {}", e.getMessage());
+                log.warn("解析搜索结果失败：{}", e.getMessage());
             }
         }
 

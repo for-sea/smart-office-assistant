@@ -38,12 +38,12 @@ spring:
         username:               # 如果启用了认证
         password:             # 默认密码
         # uri: http://localhost:19530 # 也可用URI方式，与host/port二选一
+        connect-timeout-ms: 10000 # 客户端通道的连接超时值
 
       # 存储配置
       database-name: default        # 数据库名称
       collection-name: document_chunks # 集合名称
       collection-description: 文档块向量集合
-      collection-timeout: 10
       embedding-dimension: 4096     # ⚠️ 关键：必须与嵌入模型输出维度一致！
       shards-num: 2
 
@@ -60,6 +60,8 @@ spring:
 
       # 是否自动初始化Schema（首次运行时建议设为true）
       initialize-schema: true
+      default-top-k: 5
+      min-score: 0.5
 
   # 文件上传配置
   servlet:
@@ -100,6 +102,14 @@ mybatis-plus:
     map-underscore-to-camel-case: true                                                 # 开启驼峰命名
     log-impl: org.apache.ibatis.logging.stdout.StdOutImpl                             # 打印SQL日志
 
+# 日志配置
+logging:
+  level:
+    org.springframework.ai: DEBUG
+    com.example.rag: DEBUG
+    # 开启 SimpleLoggerAdvisor 的 DEBUG 日志
+    org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor: DEBUG
+
 # 异步任务配置
 async:
   executor:
@@ -115,6 +125,7 @@ async:
       max-retries: 3         # 最大重试次数
       enable-smart-split: true  # 启用智能分块
 
+# 文档上传自定义配置
 app:
   document:
     storage:
