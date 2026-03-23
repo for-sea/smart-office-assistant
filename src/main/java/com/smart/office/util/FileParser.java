@@ -13,9 +13,8 @@ import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -298,9 +297,235 @@ public class FileParser {
         }
     }
 
+    // 在 FileParser.java 中添加以下方法
+
     /**
-     * 核心解析方法
+     * 检查是否为有效的UTF-8编码
      */
+    private boolean isValidUTF8(byte[] bytes) {
+        try {
+            String test = new String(bytes, StandardCharsets.UTF_8);
+            // 简单检查：如果转换后没有太多替换字符，认为是有效UTF-8
+            int invalidCount = 0;
+            for (int i = 0; i < Math.min(test.length(), 100); i++) {
+                char c = test.charAt(i);
+                if (c == '\ufffd') {
+                    invalidCount++;
+                }
+            }
+            return invalidCount < 5;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    /**
+     * 检查文本是否有效（没有太多乱码）
+     */
+    private boolean isValidText(String text) {
+        if (text == null || text.isEmpty()) {
+            return false;
+        }
+
+        int validCount = 0;
+        int checkLength = Math.min(text.length(), 200);
+
+        for (int i = 0; i < checkLength; i++) {
+            char c = text.charAt(i);
+            // 检查是否为常见字符（中文、英文、数字、常用标点）
+            if ((c >= 0x4e00 && c <= 0x9fff) || // 中文CJK统一表意文字
+                    (c >= 0x3400 && c <= 0x4dbf) || // 中文扩展A
+                    (c >= 0x20000 && c <= 0x2a6df) || // 中文扩展B
+                    (c >= 'a' && c <= 'z') ||
+                    (c >= 'A' && c <= 'Z') ||
+                    (c >= '0' && c <= '9') ||
+                    (c == ' ' || c == '\n' || c == '\r' || c == '\t') ||
+                    (c >= 0x3000 && c <= 0x303f) || // 中文标点（、。！？等）
+                    (c >= 0xff00 && c <= 0xffef) || // 全角字符
+                    (c >= 0x2000 && c <= 0x206f) || // 通用标点
+                    (c >= 0x20 && c <= 0x7e)) { // ASCII可打印字符
+                validCount++;
+            }
+        }
+
+        // 如果有效字符比例大于70%，认为文本有效
+        return (double) validCount / checkLength > 0.7;
+    }
+
+    /**
+     * 判断是否为文本文件
+     */
+    private boolean isTextFile(String fileName) {
+        if (fileName == null) return false;
+        String lowerName = fileName.toLowerCase();
+        return lowerName.endsWith(".txt") ||
+                lowerName.endsWith(".md") ||
+                lowerName.endsWith(".markdown") ||
+                lowerName.endsWith(".xml") ||
+                lowerName.endsWith(".html") ||
+                lowerName.endsWith(".htm") ||
+                lowerName.endsWith(".csv") ||
+                lowerName.endsWith(".json") ||
+                lowerName.endsWith(".properties") ||
+                lowerName.endsWith(".log") ||
+                lowerName.endsWith(".sql") ||
+                lowerName.endsWith(".yaml") ||
+                lowerName.endsWith(".yml");
+    }
+
+    /**
+     * 检查文本是否有乱码
+     */
+    private boolean hasGarbledText(String text) {
+        if (text == null || text.isEmpty()) {
+            return false;
+        }
+
+        int garbledCount = 0;
+        int checkLength = Math.min(text.length(), 200);
+
+        for (int i = 0; i < checkLength; i++) {
+            char c = text.charAt(i);
+            // 乱码通常表现为：
+            // 1. 替换字符 \ufffd
+            // 2. 控制字符（除了换行、回车、制表符）
+            // 3. 非常规Unicode区域
+            if (c == '\ufffd') {
+                garbledCount++;
+            } else if (c < 0x20 && c != '\n' && c != '\r' && c != '\t') {
+                garbledCount++;
+            } else if (c > 0x7f && c < 0xa0) {
+                // 这个范围通常是ISO-8859-1的扩展字符，容易产生乱码
+                garbledCount++;
+            }
+        }
+
+        return (double) garbledCount / checkLength > 0.1;
+    }
+
+    /**
+     * 从资源检测字符编码
+     */
+    private String detectCharsetFromResource(Resource resource) {
+        try {
+            byte[] buffer = new byte[4096];
+            try (InputStream is = resource.getInputStream()) {
+                int bytesRead = is.read(buffer);
+                if (bytesRead > 0) {
+                    byte[] sample = new byte[bytesRead];
+                    System.arraycopy(buffer, 0, sample, 0, bytesRead);
+
+                    // 检查UTF-8 BOM (EF BB BF)
+                    if (bytesRead >= 3 &&
+                            sample[0] == (byte)0xEF && sample[1] == (byte)0xBB && sample[2] == (byte)0xBF) {
+                        return "UTF-8";
+                    }
+
+                    // 检查UTF-16BE BOM (FE FF)
+                    if (bytesRead >= 2 && sample[0] == (byte)0xFE && sample[1] == (byte)0xFF) {
+                        return "UTF-16BE";
+                    }
+
+                    // 检查UTF-16LE BOM (FF FE)
+                    if (bytesRead >= 2 && sample[0] == (byte)0xFF && sample[1] == (byte)0xFE) {
+                        return "UTF-16LE";
+                    }
+
+                    // 检查UTF-32BE BOM (00 00 FE FF)
+                    if (bytesRead >= 4 &&
+                            sample[0] == 0x00 && sample[1] == 0x00 &&
+                            sample[2] == (byte)0xFE && sample[3] == (byte)0xFF) {
+                        return "UTF-32BE";
+                    }
+
+                    // 检查UTF-32LE BOM (FF FE 00 00)
+                    if (bytesRead >= 4 &&
+                            sample[0] == (byte)0xFF && sample[1] == (byte)0xFE &&
+                            sample[2] == 0x00 && sample[3] == 0x00) {
+                        return "UTF-32LE";
+                    }
+
+                    // 尝试UTF-8
+                    if (isValidUTF8(sample)) {
+                        return "UTF-8";
+                    }
+
+                    // 尝试常见的中文编码
+                    String[] encodings = {"GBK", "GB2312", "GB18030", "Big5", "ISO-8859-1", "Windows-1252"};
+                    for (String encoding : encodings) {
+                        try {
+                            String test = new String(sample, encoding);
+                            // 检查转换后的文本是否合理
+                            if (isValidText(test) && !hasGarbledText(test)) {
+                                log.debug("检测到编码: {}, 有效字符率: {}/{}",
+                                        encoding, getValidCharCount(test), test.length());
+                                return encoding;
+                            }
+                        } catch (Exception e) {
+                            // 编码不适用，继续尝试
+                        }
+                    }
+                }
+            }
+        } catch (IOException e) {
+            log.warn("检测字符编码失败", e);
+        }
+
+        // 默认返回UTF-8
+        log.info("未检测到明确编码，使用默认UTF-8");
+        return "UTF-8";
+    }
+
+    /**
+     * 获取有效字符数量（辅助方法）
+     */
+    private int getValidCharCount(String text) {
+        if (text == null || text.isEmpty()) {
+            return 0;
+        }
+
+        int validCount = 0;
+        int checkLength = Math.min(text.length(), 200);
+
+        for (int i = 0; i < checkLength; i++) {
+            char c = text.charAt(i);
+            // 常见有效字符的判断
+            if ((c >= 0x4e00 && c <= 0x9fff) || // 中文
+                    (c >= 'a' && c <= 'z') ||
+                    (c >= 'A' && c <= 'Z') ||
+                    (c >= '0' && c <= '9') ||
+                    (c == ' ' || c == '\n' || c == '\r' || c == '\t') ||
+                    (c >= 0x20 && c <= 0x7e)) { // ASCII可打印字符
+                validCount++;
+            }
+        }
+
+        return validCount;
+    }
+
+    /**
+     * 使用指定编码重新解析文件
+     */
+    private String reparseWithCharset(Resource resource, String charset) {
+        try {
+            StringBuilder content = new StringBuilder();
+            try (InputStream is = resource.getInputStream();
+                 BufferedReader reader = new BufferedReader(new InputStreamReader(is, charset))) {
+                char[] buffer = new char[8192];
+                int charsRead;
+                while ((charsRead = reader.read(buffer)) != -1) {
+                    content.append(buffer, 0, charsRead);
+                }
+            }
+            return content.toString();
+        } catch (IOException e) {
+            log.warn("使用编码 {} 重新解析失败: {}", charset, e.getMessage());
+            return "";
+        }
+    }
+
+    // 在 FileParser.java 中修改 parseResource 方法，添加编码检测逻辑
+
     private ParseResult parseResource(Resource resource, String fileName, long fileSize, ParseConfig config)
             throws DocumentParseException {
 
@@ -310,6 +535,13 @@ public class FileParser {
         result.setDocumentType(DocumentType.fromFileName(fileName));
 
         try {
+            // 对于文本文件，需要检测编码
+            String charset = "UTF-8";
+            if (isTextFile(fileName)) {
+                charset = detectCharsetFromResource(resource);
+                log.info("检测到文件编码: {}, 文件: {}", charset, fileName);
+            }
+
             // 创建 TikaDocumentParser
             TikaDocumentReader reader = new TikaDocumentReader(resource);
 
@@ -320,11 +552,12 @@ public class FileParser {
                 throw new DocumentParseException("未提取到文档内容");
             }
 
-            // 合并所有文档内容（通常只有一个Document）
+            // 合并所有文档内容
             StringBuilder contentBuilder = new StringBuilder();
             for (Document doc : documents) {
                 if (StringUtils.isNotBlank(doc.getText())) {
-                    contentBuilder.append(doc.getText()).append("\n");
+                    String text = doc.getText();
+                    contentBuilder.append(text).append("\n");
                 }
 
                 // 提取元数据
@@ -335,15 +568,25 @@ public class FileParser {
 
             String content = contentBuilder.toString();
 
+            // 如果是文本文件且内容有乱码，尝试用检测到的编码重新解析
+            if (isTextFile(fileName) && hasGarbledText(content)) {
+                log.warn("检测到内容可能有乱码，尝试使用编码 {} 重新解析", charset);
+                String reparseContent = reparseWithCharset(resource, charset);
+                if (StringUtils.isNotBlank(reparseContent) && !hasGarbledText(reparseContent)) {
+                    content = reparseContent;
+                    log.info("使用编码 {} 重新解析成功", charset);
+                }
+            }
+
             // 限制内容长度
             if (config.getMaxContentLength() > 0 && content.length() > config.getMaxContentLength()) {
                 content = content.substring(0, config.getMaxContentLength());
-                log.info("内容已截断，长度: {} -> {}", contentBuilder.length(), config.getMaxContentLength());
+                log.info("内容已截断，原长度: {} -> 截断后: {}", contentBuilder.length(), config.getMaxContentLength());
             }
 
             result.setContent(content);
 
-            // 语言检测（简单实现，实际可集成语言检测库）
+            // 语言检测
             if (config.isDetectLanguage()) {
                 result.setLanguage(detectLanguage(content));
             }
@@ -357,8 +600,10 @@ public class FileParser {
             result.getExtraInfo().put("charCount", content.length());
             result.getExtraInfo().put("wordCount", countWords(content));
             result.getExtraInfo().put("lineCount", content.split("\n").length);
+            result.getExtraInfo().put("charset", charset);
 
-            log.info("文档解析完成: {}, 内容长度: {} 字符", fileName, content.length());
+            log.info("文档解析完成: {}, 内容长度: {} 字符, 编码: {}",
+                    fileName, content.length(), charset);
 
         } catch (Exception e) {
             log.error("Tika 解析失败: {}", fileName, e);

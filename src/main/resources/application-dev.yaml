@@ -2,6 +2,12 @@ server:
   port: 8791
   servlet:
     context-path: /smart-office
+  tomcat:
+    max-http-form-post-size: 50MB
+    max-connections: 200
+    threads:
+      max: 200
+      min-spare: 10
 
 spring:
   # AI配置
@@ -35,8 +41,11 @@ spring:
 
       # 存储配置
       database-name: default        # 数据库名称
-      collection-name: vector_store # 集合名称
+      collection-name: document_chunks # 集合名称
+      collection-description: 文档块向量集合
+      collection-timeout: 10
       embedding-dimension: 4096     # ⚠️ 关键：必须与嵌入模型输出维度一致！
+      shards-num: 2
 
       # 索引配置
       index-type: IVF_FLAT          # 索引类型
@@ -56,8 +65,8 @@ spring:
   servlet:
     multipart:
       enabled: true
-      max-file-size: 100MB
-      max-request-size: 100MB
+      max-file-size: 50MB  # 限制文件大小
+      max-request-size: 50MB
       file-size-threshold: 2KB
 
   # 数据库配置
@@ -98,9 +107,20 @@ async:
     max-pool-size: 20
     queue-capacity: 100
     thread-name-prefix: doc-process-
-
   task:
     document:
       chunk-size: 500        # 文本块大小（字符数）
       chunk-overlap: 100     # 块重叠大小
+      batch-size: 50         # 批量处理大小
       max-retries: 3         # 最大重试次数
+      enable-smart-split: true  # 启用智能分块
+
+app:
+  document:
+    storage:
+      path: ./data/docs
+      max-file-size: 52428800  # 50MB
+    processing:
+      batch-size: 10  # 减小批处理大小
+      max-chunks: 10000  # 最大分块数限制
+      chunk-timeout: 300  # 处理超时时间(秒)

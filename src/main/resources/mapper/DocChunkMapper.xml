@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.smart.office.repository.mapper.DocChunkMapper">
+
+    <!-- 批量插入文档块 -->
+    <insert id="batchInsert" parameterType="list">
+        INSERT INTO doc_chunk (
+        doc_id, chunk_index, milvus_id, content,
+        content_length, start_position, end_position,
+        page_number, heading, create_time
+        ) VALUES
+        <foreach collection="list" item="item" separator=",">
+            (
+            #{item.docId},
+            #{item.chunkIndex},
+            #{item.milvusId},
+            #{item.content},
+            #{item.contentLength},
+            #{item.startPosition},
+            #{item.endPosition},
+            #{item.pageNumber},
+            #{item.heading},
+            NOW()
+            )
+        </foreach>
+    </insert>
+
+    <!-- 根据文档ID删除所有块（逻辑删除或物理删除） -->
+    <delete id="deleteByDocId">
+        DELETE FROM doc_chunk WHERE doc_id = #{docId}
+    </delete>
+
+    <!-- 复杂查询示例：根据内容关键词查询 -->
+    <select id="searchByContent" resultType="com.smart.office.model.entity.DocChunk">
+        SELECT * FROM doc_chunk
+        WHERE doc_id IN
+        <foreach collection="docIds" item="docId" open="(" separator="," close=")">
+            #{docId}
+        </foreach>
+        AND content LIKE CONCAT('%', #{keyword}, '%')
+        ORDER BY chunk_index
+        LIMIT #{limit}
+    </select>
+
+</mapper>

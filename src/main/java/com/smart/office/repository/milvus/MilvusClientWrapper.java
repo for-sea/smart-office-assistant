@@ -35,40 +35,40 @@ public class MilvusClientWrapper {
     private MilvusServiceClient milvusClient;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    @Value("${milvus.host:localhost}")
+    @Value("${spring.vectorstore.milvus.client.host:localhost}")
     private String host;
 
-    @Value("${milvus.port:19530}")
+    @Value("${spring.vectorstore.milvus.client.port:19530}")
     private int port;
 
-    @Value("${milvus.username:}")
+    @Value("${spring.vectorstore.milvus.client.username:}")
     private String username;
 
-    @Value("${milvus.password:}")
+    @Value("${spring.vectorstore.milvus.client.password:}")
     private String password;
 
-    @Value("${milvus.collection.name:document_chunks}")
+    @Value("${spring.vectorstore.milvus.collection-name:document_chunks}")
     private String collectionName;
 
-    @Value("${milvus.collection.dimension:1536}")
+    @Value("${spring.vectorstore.milvus.embedding-dimension:1536}")
     private Integer dimension;
 
-    @Value("${milvus.collection.shards-num:2}")
+    @Value("${spring.vectorstore.milvus.shards-num:2}")
     private Integer shardsNum;
 
-    @Value("${milvus.collection.description:文档块向量集合}")
+    @Value("${spring.vectorstore.milvus.collection-description:文档块向量集合}")
     private String collectionDescription;
 
-    @Value("${milvus.index.type:IVF_FLAT}")
+    @Value("${spring.vectorstore.milvus.index-type:IVF_FLAT}")
     private String indexType;
 
-    @Value("${milvus.index.metric-type:COSINE}")
+    @Value("${spring.vectorstore.milvus.metric-type:COSINE}")
     private String metricType;
 
-    @Value("${milvus.index.params.nlist:1024}")
+    @Value("${spring.vectorstore.milvus.index-parameters.nlist:1024}")
     private Integer nlist;
 
-    @Value("${milvus.connection.timeout:10}")
+    @Value("${spring.vectorstore.milvus.collection-timeout:10}")
     private int connectionTimeout;
 
     /**

@@ -1,9 +1,6 @@
 package com.smart.office.model.entity;
 
-import com.baomidou.mybatisplus.annotation.IdType;
-import com.baomidou.mybatisplus.annotation.TableField;
-import com.baomidou.mybatisplus.annotation.TableId;
-import com.baomidou.mybatisplus.annotation.TableName;
+import com.baomidou.mybatisplus.annotation.*;
 import lombok.Data;
 import java.time.LocalDateTime;
 
@@ -51,13 +48,13 @@ public class Document {
     /**
      * 上传时间
      */
-    @TableField("upload_time")
+    @TableField(value = "upload_time", fill = FieldFill.INSERT)
     private LocalDateTime uploadTime;
     
     /**
      * 最后更新时间
      */
-    @TableField("update_time")
+    @TableField(value = "update_time", fill = FieldFill.INSERT_UPDATE)
     private LocalDateTime updateTime;
     
     /**
@@ -97,4 +94,10 @@ public class Document {
      * 版本号（乐观锁）
      */
     private Integer version;
+
+    /**
+     * 是否删除（0-否，1-是）
+     */
+    @TableField("is_deleted")
+    private Integer deleted;
 }
