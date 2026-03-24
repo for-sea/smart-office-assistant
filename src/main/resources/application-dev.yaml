@@ -48,7 +48,7 @@ spring:
       # 索引配置
       index-type: IVF_FLAT                  # 索引类型
       metric-type: COSINE                   # 相似度计算方式（余弦相似度）
-      index-parameters: {"nlist": 1024}     # 索引参数
+      index-parameters: { "nlist": 1024 }     # 索引参数
 
       # 字段映射配置
       id-field-name: doc_id                 # ID 字段名

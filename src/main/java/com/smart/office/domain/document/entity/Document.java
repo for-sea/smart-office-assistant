@@ -1,0 +1,103 @@
+package com.smart.office.domain.document.entity;
+
+import com.baomidou.mybatisplus.annotation.*;
+import lombok.Data;
+import java.time.LocalDateTime;
+
+/**
+ * 文档元数据表
+ */
+@Data
+@TableName("document")
+public class Document {
+    /**
+     * 主键ID
+     */
+    @TableId(type = IdType.AUTO)
+    private Long id;
+    
+    /**
+     * 原始文件名
+     */
+    @TableField("file_name")
+    private String fileName;
+    
+    /**
+     * 存储路径（本地或OSS路径）
+     */
+    @TableField("file_path")
+    private String filePath;
+    
+    /**
+     * 文件大小（字节）
+     */
+    @TableField("file_size")
+    private Long fileSize;
+    
+    /**
+     * 文件类型（pdf/docx/txt等）
+     */
+    @TableField("file_type")
+    private String fileType;
+    
+    /**
+     * 上传者/创建人
+     */
+    private String uploader;
+    
+    /**
+     * 上传时间
+     */
+    @TableField(value = "upload_time", fill = FieldFill.INSERT)
+    private LocalDateTime uploadTime;
+    
+    /**
+     * 最后更新时间
+     */
+    @TableField(value = "update_time", fill = FieldFill.INSERT_UPDATE)
+    private LocalDateTime updateTime;
+    
+    /**
+     * 状态：0-处理中，1-已完成，2-处理失败，3-已禁用
+     */
+    private Integer status;
+    
+    /**
+     * 分块数量
+     */
+    @TableField("chunk_count")
+    private Integer chunkCount;
+    
+    /**
+     * 处理耗时（秒）
+     */
+    @TableField("process_time")
+    private Integer processTime;
+    
+    /**
+     * 处理失败时的错误信息
+     */
+    @TableField("error_message")
+    private String errorMessage;
+    
+    /**
+     * 所属部门（用于权限控制）
+     */
+    private String department;
+    
+    /**
+     * 文档描述
+     */
+    private String description;
+    
+    /**
+     * 版本号（乐观锁）
+     */
+    private Integer version;
+
+    /**
+     * 是否删除（0-否，1-是）
+     */
+    @TableField("is_deleted")
+    private Integer deleted;
+}

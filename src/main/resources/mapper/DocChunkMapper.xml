@@ -32,7 +32,7 @@
     </delete>
 
     <!-- 复杂查询示例：根据内容关键词查询 -->
-    <select id="searchByContent" resultType="com.smart.office.model.entity.DocChunk">
+    <select id="searchByContent" resultType="com.smart.office.domain.document.entity.DocChunk">
         SELECT * FROM doc_chunk
         WHERE doc_id IN
         <foreach collection="docIds" item="docId" open="(" separator="," close=")">

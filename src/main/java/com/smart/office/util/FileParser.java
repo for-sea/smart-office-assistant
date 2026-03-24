@@ -1,6 +1,6 @@
 package com.smart.office.util;
 
-import com.smart.office.common.exception.DocumentParseException;
+import com.smart.office.shared.common.DocumentParseException;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
