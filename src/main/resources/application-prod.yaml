@@ -1,0 +1,14 @@
+app:
+  auth:
+    jwt:
+      secret: ${APP_AUTH_JWT_SECRET:change-me-in-prod}
+      expire-seconds: ${APP_AUTH_JWT_EXPIRE_SECONDS:7200}
+      issuer: ${APP_AUTH_JWT_ISSUER:smart-office}
+      header: ${APP_AUTH_JWT_HEADER:Authorization}
+      token-prefix: ${APP_AUTH_JWT_TOKEN_PREFIX:Bearer }
+    admin:
+      username: ${APP_AUTH_ADMIN_USERNAME:admin}
+      password: ${APP_AUTH_ADMIN_PASSWORD:admin123}
+      user-id: ${APP_AUTH_ADMIN_USER_ID:admin}
+      department: ${APP_AUTH_ADMIN_DEPARTMENT:ADMIN}
+      group-code: ${APP_AUTH_ADMIN_GROUP_CODE:CORE}
